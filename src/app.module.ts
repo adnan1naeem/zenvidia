@@ -5,7 +5,6 @@ import { DatabaseModule } from './database/database.module';
 import { StripeModule } from './integrations/stripe/stripe.module';
 import { WhatsappModule } from './integrations/whatsapp/whatsapp.module';
 import { ProductsModule } from './products/products.module';
-import { Stage1ConfirmationModule } from './stages/stage-1-confirmation/stage1-confirmation.module';
 
 @Module({
   imports: [
@@ -17,7 +16,6 @@ import { Stage1ConfirmationModule } from './stages/stage-1-confirmation/stage1-c
     ProductsModule,
     StripeModule,
     WhatsappModule,
-    Stage1ConfirmationModule,
   ],
   controllers: [],
   providers: [AppService],

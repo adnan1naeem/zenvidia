@@ -20,12 +20,18 @@ export interface PrepareDepositCheckoutParams {
   customerName?: string | null;
 }
 
-export interface DepositCheckoutResult {
-  appointment: Appointment;
-  checkoutUrl: string;
-  sessionId: string;
-  reusedExisting: boolean;
-}
+export type DepositCheckoutResult =
+  | {
+      kind: 'checkout';
+      appointment: Appointment;
+      checkoutUrl: string;
+      sessionId: string;
+      reusedExisting: boolean;
+    }
+  | {
+      kind: 'already_booked';
+      appointment: Appointment;
+    };
 
 @Injectable()
 export class BookingsService {
@@ -52,6 +58,18 @@ export class BookingsService {
       email: params.email,
       name: params.customerName,
     });
+
+    const bookedAppointment = await this.appointments.findBookedForUserAndProduct(
+      user.id,
+      product.id,
+    );
+    if (bookedAppointment) {
+      this.logger.log('User already has booked appointment for service', {
+        appointmentId: bookedAppointment.id,
+        serviceId: product.serviceId,
+      });
+      return { kind: 'already_booked', appointment: bookedAppointment };
+    }
 
     let appointment = await this.appointments.findActiveForUserAndProduct(
       user.id,
@@ -85,6 +103,7 @@ export class BookingsService {
     });
 
     return {
+      kind: 'checkout',
       appointment,
       checkoutUrl: url,
       sessionId,

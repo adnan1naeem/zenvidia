@@ -43,6 +43,21 @@ export class AppointmentsService {
     });
   }
 
+  async findBookedForUserAndProduct(
+    userId: string,
+    productUuid: string,
+  ): Promise<Appointment | null> {
+    return this.appointmentsRepo.findOne({
+      where: {
+        user: { id: userId },
+        product: { id: productUuid },
+        status: AppointmentStatus.Booked,
+      },
+      relations: { product: true, user: true },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async create(params: CreateAppointmentParams): Promise<Appointment> {
     const appointment = this.appointmentsRepo.create({
       user: { id: params.userId },

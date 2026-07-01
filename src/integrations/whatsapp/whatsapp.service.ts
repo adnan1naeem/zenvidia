@@ -2,12 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as crypto from 'crypto';
+import { AppointmentsService } from 'src/appointments/appointments.service';
 import {
   ZenVidaCategory,
   ZenVidaService,
   formatServiceSlot,
   formatUsd,
 } from '../../common/zenvida-catalog';
+import { AppointmentStatus } from '../../database/enums/appointment-status.enum';
 import {
   InboundMessage,
   InboundMessageType,
@@ -26,7 +28,10 @@ export class WhatsappService {
   private readonly token: string;
   private readonly phoneNumberId: string;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly appointments: AppointmentsService,
+  ) {
     this.token = config.getOrThrow<string>('WHATSAPP_TOKEN');
     this.phoneNumberId = config.getOrThrow<string>('WHATSAPP_PHONE_NUMBER_ID');
     this.baseUrl = `https://graph.facebook.com/v19.0/${this.phoneNumberId}/messages`;
@@ -273,5 +278,57 @@ export class WhatsappService {
       }
       throw err;
     }
+  }
+
+  async handleButtonReply(
+    phone: string,
+    buttonId: string | undefined,
+  ): Promise<boolean> {
+    if (!buttonId) return false;
+
+    if (buttonId.startsWith('cancel_')) {
+      return this.handleCancel(phone, buttonId.slice(7));
+    }
+    return false;
+  }
+
+  private async handleCancel(
+    phone: string,
+    appointmentId: string,
+  ): Promise<boolean> {
+    const appointment = await this.appointments.findById(appointmentId);
+    if (!appointment) {
+      this.logger.warn('Cancel received for unknown appointment', {
+        appointmentId,
+        phone: `***${phone.slice(-4)}`,
+      });
+      return false;
+    }
+
+    if (appointment.user?.phone !== phone) {
+      this.logger.warn('Cancel phone mismatch', {
+        appointmentId,
+        phone: `***${phone.slice(-4)}`,
+      });
+      return false;
+    }
+
+    await this.appointments.updateStatus(
+      appointmentId,
+      AppointmentStatus.Expired,
+    );
+
+    const customerName = appointment.user?.name ?? 'there';
+    const serviceName = appointment.product?.title ?? 'your appointment';
+
+    await this.sendText(
+      phone,
+      `Thanks, ${customerName}! Your ${serviceName} appointment has been cancelled. We hope to see you at ZenVida soon.`,
+    );
+
+    this.logger.log('Appointment cancelled — confirmation sent', {
+      appointmentId,
+    });
+    return true;
   }
 }

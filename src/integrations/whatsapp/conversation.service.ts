@@ -103,13 +103,28 @@ export class ConversationService {
 
     this.pendingServiceFilter.delete(phone);
 
-    const { appointment, checkoutUrl, reusedExisting } =
-      await this.bookings.prepareDepositCheckout({
-        phone,
-        serviceId: service.id,
-      });
+    const result = await this.bookings.prepareDepositCheckout({
+      phone,
+      serviceId: service.id,
+    });
 
     const slotLabel = formatServiceSlot(service.scheduledAt);
+
+    if (result.kind === 'already_booked') {
+      await this.whatsapp.sendText(
+        phone,
+        `Your appointment for *${service.title}* is already booked on ${slotLabel}.\n\n` +
+          'No payment is needed — we look forward to seeing you at ZenVida!',
+      );
+
+      this.logger.log(
+        `Already-booked notice sent for ${service.title} to ***${phone.slice(-4)}`,
+        { appointmentId: result.appointment.id },
+      );
+      return;
+    }
+
+    const { appointment, checkoutUrl, reusedExisting } = result;
 
     const reuseNote = reusedExisting
       ? 'You already have an active booking for this service — here is your payment link again.\n\n'

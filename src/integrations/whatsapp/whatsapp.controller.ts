@@ -3,18 +3,15 @@ import {
   Controller,
   Get,
   HttpCode,
-  Inject,
   Logger,
   Post,
   Query,
   Req,
   Res,
-  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import type { RawBodyRequest } from '../../common/raw-body-request';
-import { Stage1ConfirmationService } from '../../stages/stage-1-confirmation/stage1-confirmation.service';
 import { ConversationService } from './conversation.service';
 import { WhatsappService } from './whatsapp.service';
 import type { WhatsAppWebhookPayload } from './whatsapp.types';
@@ -28,8 +25,6 @@ export class WhatsappController {
     private readonly whatsappService: WhatsappService,
     private readonly config: ConfigService,
     private readonly conversation: ConversationService,
-    @Inject(forwardRef(() => Stage1ConfirmationService))
-    private readonly stage1: Stage1ConfirmationService,
   ) {}
 
   /** Meta webhook verification handshake */
@@ -100,8 +95,7 @@ export class WhatsappController {
         const serviceId = payload.slice('select_'.length);
         await this.conversation.handleServiceSelection(message.from, serviceId);
       } else if (payload?.startsWith('cancel_')) {
-        // Stage 1 cancel button: cancel_{bookingId}
-        await this.stage1.handleButtonReply(message.from, payload);
+        await this.whatsappService.handleButtonReply(message.from, payload);
       }
     }
 
