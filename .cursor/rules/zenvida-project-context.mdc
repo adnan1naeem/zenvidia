@@ -1,0 +1,38 @@
+---
+description: ZenVida WhatsApp automation business context, integrations, and KPIs
+alwaysApply: true
+---
+
+# ZenVida Project Context
+
+NestJS backend automating ZenVida (Madrid wellness studio) customer lifecycle via WhatsApp.
+
+## Integrations
+
+| System       | Role                                                             |
+| ------------ | ---------------------------------------------------------------- |
+| **Mindbody** | Booking source of truth; appointment status updates              |
+| **Stripe**   | deposit and add-on payment links                                 |
+| **WhatsApp** | Customer channel — confirmations, reminders, upsells, follow-ups |
+
+## Architecture Principles
+
+- **Event-driven**: Mindbody bookings and Stripe payments trigger flows; cron jobs handle time-based stages.
+- **Idempotent webhooks**: Deduplicate by external event ID; safe to retry.
+- **Stage isolation**: Each of the 5 automation stages is a separate module with its own triggers, handlers, and message templates.
+- **Config via env**: API keys, webhook secrets, and studio details in `.env` — never hardcode.
+
+## KPI Targets
+
+| Metric                        | Target |
+| ----------------------------- | ------ |
+| WhatsApp delivery rate        | > 95%  |
+| No-show reduction             | 40–50% |
+| Deposit collection within 48h | 100%   |
+| Upsell conversion             | 15–20% |
+| Review generation             | > 60%  |
+| Repeat booking increase       | 25–35% |
+
+## Reference
+
+Full business flow: `overview.md`

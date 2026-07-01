@@ -1,0 +1,45 @@
+# NestJS Patterns
+
+## Module Layout
+
+```
+src/
+  stages/
+    stage-1-confirmation/
+    stage-2-deposit/
+    ...
+  integrations/
+    mindbody/
+    stripe/
+    whatsapp/
+  common/
+    scheduling/
+    messaging/
+```
+
+Each stage module: `*.module.ts`, `*.service.ts`, `*.controller.ts` (webhooks only), DTOs with `class-validator`.
+
+## Webhooks
+
+- Verify signatures (Stripe, WhatsApp) before processing.
+- Return 200 quickly; enqueue heavy work if needed.
+- Store processed event IDs to prevent duplicate handling.
+
+## Scheduling
+
+- Use `@nestjs/schedule` for cron jobs (6h unpaid check, 24h reminder batch, 2h per-appointment).
+- All times in studio timezone (Europe/Madrid).
+
+## Messaging
+
+- Centralize WhatsApp send logic in `integrations/whatsapp/`.
+- Message templates live with their stage module; shared formatting in `common/messaging/`.
+- Support interactive buttons and carousels per WhatsApp Business API constraints.
+
+## Error Handling
+
+Log context with booking/customer ID, then rethrow or return structured error. Never swallow exceptions silently.
+
+## TypeScript
+
+Use exhaustive `switch` with `never` in default case for stage/status enums.
